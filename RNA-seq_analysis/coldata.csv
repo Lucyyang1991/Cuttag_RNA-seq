@@ -1,0 +1,13 @@
+sample,type,sample_rename
+G20,Cre,Cre1
+G21,Flox,Flox1
+O1,Cre,Cre2
+O2,Flox,Flox2
+O3,Cre,Cre3
+O4,Flox,Flox3
+G20.act,Cre,Cre.act1
+G21.act,Flox,Flox.act1
+O1.act,Cre,Cre.act2
+O2.act,Flox,Flox.act2
+O3.act,Cre,Cre.act3
+O4.act,Flox,Flox.act3

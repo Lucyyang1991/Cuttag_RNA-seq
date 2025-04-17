@@ -1,0 +1,14 @@
+﻿sample_id,group,control_type,target,replicate,description
+H1,treatment,None,IKZF2,rep1,IKZF2 CUT&TAG sample replicate 1
+H2,treatment,None,IKZF2,rep2,IKZF2 CUT&TAG sample replicate 2
+H3,treatment,None,IKZF2,rep3,IKZF2 CUT&TAG sample replicate 3
+I1,control,IgG,,rep1,IgG control replicate 1
+I2,control,IgG,,rep2,IgG control replicate 2
+,,,,,
+# 列说明：,,,,,
+# sample_id：样本ID,,,,,
+# group：treatment(处理组)/control(对照组),,,,,
+# control_type：IgG(IgG对照)/Input(Input对照)/None(无对照),,,,,
+# target：抗体靶标名称，如H3K27me3、H3K4me3等,,,,,
+# replicate：生物学重复编号，如rep1、rep2等,,,,,
+# description：样本描述（可选） ,,,,,
