@@ -38,7 +38,7 @@ project_root/
     └── 诺唯赞流程/
 ```
 
-详细的目录结构规范请参考 `PROJECT_RULES.MD` 中的第3节和第9节。
+详细的目录结构规范请参考 `.cursor\rules\cuttag_workflow.mdc` 中的第3节和第9节。
 
 ## 3. 分析流程
 
@@ -71,7 +71,7 @@ project_root/
     *   `07_sample_correlation.sh`: 使用 deepTools 分析样本间的相关性。
 
 **运行方式**:
-服务器端的脚本设计为通过SGE (Sun Grid Engine) 作业调度系统提交和运行。具体提交方式请参考 `PROJECT_RULES.MD` 中的第6节"并行处理规范"和第7节中的 `qsub.sh` 脚本说明。
+服务器端的脚本设计为通过SGE (Sun Grid Engine) 作业调度系统提交和运行。具体提交方式请参考 `.cursor\rules\cuttag_workflow.mdc` 中的第6节"并行处理规范"和第7节中的 `qsub.sh` 脚本说明。
 
 ### 3.2 本地分析流程 (位于 `local_analysis` 和 `RNA-seq_analysis` 目录)
 
@@ -113,7 +113,7 @@ project_root/
 
 ## 5. 文件命名与结果组织
 
-请严格遵守 `PROJECT_RULES.MD` 中关于文件命名（第2节）和结果文件组织（第9节）的规范。这有助于保持项目的一致性和可维护性。
+请严格遵守 `.cursor\rules\cuttag_workflow.mdc` 中关于文件命名（第2节）和结果文件组织（第9节）的规范。这有助于保持项目的一致性和可维护性。
 
 ## 6. 参考流程
 
@@ -128,13 +128,13 @@ project_root/
 
 *   **环境分离**: `LBFC20230270` 目录下的脚本仅能在服务器环境运行，`local_analysis` 目录下的脚本仅能在本地环境运行。
 *   **配置文件**: 核心配置（如文件路径、样本列表）集中在 `LBFC20230270/config/00_config.sh` 中管理。
-*   **SGE提交**: 服务器端计算密集型任务通过SGE提交，遵循特定的脚本格式和依赖管理，详见 `PROJECT_RULES.MD`。
+*   **SGE提交**: 服务器端计算密集型任务通过SGE提交，遵循特定的脚本格式和依赖管理，详见 `.cursor\rules\cuttag_workflow.mdc`。
 *   **抽样测试**: 在进行完整分析前，建议使用 `00_subsample.sh` 对少量数据进行抽样测试，确保流程稳定。测试输出与正式分析输出严格分离。
 
 ## 8. 作者与贡献
 
-请在各脚本文件头部根据 `PROJECT_RULES.MD` 第4节的作者署名规范，明确标注作者和贡献者信息。
+请在各脚本文件头部根据 `.cursor\rules\cuttag_workflow.mdc` 第4节的作者署名规范，明确标注作者和贡献者信息。
 
 ---
 
-*本文档根据 `PROJECT_RULES.MD` 生成。请以 `PROJECT_RULES.MD` 中的详细规范为准。* 
+*本文档根据 `.cursor\rules\cuttag_workflow.mdc` 生成。请以 `.cursor\rules\cuttag_workflow.mdc` 中的详细规范为准。* 
