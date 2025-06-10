@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
 # 作者：Claude AI Assistant
-# 创建日期：2024-06-25
+# 创建日期：2025-04-17
 # 分析内容：取Cre下调差异基因和H1_H2_H3_overlap基因的交集，进行功能富集分析
 
-# 加载必要的包
+# 加载必要的包-------------------------
 suppressPackageStartupMessages({
   library(tidyverse)
   library(clusterProfiler)
@@ -12,6 +12,10 @@ suppressPackageStartupMessages({
   library(DOSE)
   library(RColorBrewer)
   library(ggplot2)
+  library(eulerr)
+  library(grid)
+  library(ggbreak)
+  library(Cairo)
 })
 
 # 设置工作目录
@@ -22,7 +26,7 @@ output_dir <- "enrichment_results"
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
 # 设置全局字体大小为8pt
-my_theme <- theme_bw() +
+my_theme <- theme_classic() +
   theme(
     text = element_text(size = 8),
     plot.title = element_text(size = 10, hjust = 0.5),
@@ -38,7 +42,7 @@ cols <- brewer.pal(8, "Dark2")
 
 cat("开始读取RNA-seq差异基因数据...\n")
 
-# 读取edgeR差异分析结果
+# 读取edgeR差异分析结果------------------
 deg_data <- read.csv("./edgeR_paired_Cre.act_vs_Flox.act_results.csv", row.names = 1)
 
 # 提取Cre下调的差异基因(Down_in_Cre)
@@ -47,7 +51,7 @@ cat("Cre下调的差异基因:", length(down_in_cre_genes), "个\n")
 
 cat("开始读取H1_H2_H3共有基因数据...\n")
 
-# 读取H1_H2_H3_overlap基因
+# 读取H1_H2_H3_overlap基因------------------
 # 注意：这里需要根据实际文件路径和格式进行调整
 h123_file <- "../local_analysis/peak_annotation_macs3/proximal_promoter_genes/all_groups_common_proximal_genes.txt"
 
@@ -58,16 +62,40 @@ if(file.exists(h123_file)) {
   stop("找不到H1_H2_H3共有基因文件，请检查路径")
 }
 
-# 找出交集基因
+# 找出交集基因-----------------------
 intersect_genes <- intersect(down_in_cre_genes, h123_genes)
 cat("交集基因:", length(intersect_genes), "个\n")
 
-# 将交集基因保存到文件
+# 绘制韦恩图------------------
+cat("开始绘制韦恩图...\n")
+venn_list <- list(
+  'Down in Cre' = down_in_cre_genes,
+  'IKZF2 Targets' = h123_genes
+)
+
+# 使用eulerr创建面积成比例的韦恩图
+fit <- euler(venn_list)
+
+# 绘制并保存韦恩图
+pdf(file.path(output_dir, "Venn_diagram_down_cre_vs_h123.pdf"), width = 4, height = 3)
+plot(fit,
+     fills = list(fill = c("#EFC000FF", "#0073C2FF"), alpha = 0.7),
+     labels = list(font = 1, fontsize = 8),
+     quantities = list(fontsize = 8)
+)
+# 手动添加标题以精确控制字体大小
+grid.text("Overlap of Down-regulated Genes and IKZF2 Targets",
+          y = unit(.95, "npc"), # 调整标题位置
+          gp = gpar(fontsize = 8))
+dev.off()
+cat("韦恩图已保存至:", file.path(output_dir, "Venn_diagram_down_cre_vs_h123.pdf"), "\n")
+
+# 将交集基因保存到文件------------------
 write.table(intersect_genes,
             file.path(output_dir, "Down_in_Cre_and_H123_overlap_genes.txt"),
             quote = FALSE, row.names = FALSE, col.names = FALSE)
 
-# 将基因符号转换为Entrez ID，用于后续富集分析
+# 将基因符号转换为Entrez ID，用于后续富集分析------------------
 cat("基因ID转换...\n")
 gene_ids <- bitr(intersect_genes,
                 fromType = "SYMBOL",
@@ -83,10 +111,10 @@ if(nrow(gene_ids) == 0) {
 # 保存基因ID对应关系
 write.csv(gene_ids, file.path(output_dir, "gene_id_mapping.csv"))
 
-# 开始富集分析
+# 开始富集分析------------------
 cat("开始GO富集分析...\n")
 
-# GO富集分析 - 合并BP、MF、CC
+# GO富集分析 - 合并BP、MF、CC------------------
 go_all <- enrichGO(gene = gene_ids$ENTREZID,
                  OrgDb = org.Mm.eg.db,
                  keyType = "ENTREZID",
@@ -100,12 +128,12 @@ go_all <- enrichGO(gene = gene_ids$ENTREZID,
 if(nrow(go_all@result) > 0) {
   write.csv(go_all@result, file.path(output_dir, "GO_enrichment.csv"))
   cat("GO富集结果:", nrow(go_all@result), "个条目\n")
-  
+
   # 按照GO子类别划分结果
   go_bp_results <- go_all@result[go_all@result$ONTOLOGY == "BP", ]
   go_mf_results <- go_all@result[go_all@result$ONTOLOGY == "MF", ]
   go_cc_results <- go_all@result[go_all@result$ONTOLOGY == "CC", ]
-  
+
   cat("其中 BP 类别:", nrow(go_bp_results), "个条目\n")
   cat("其中 MF 类别:", nrow(go_mf_results), "个条目\n")
   cat("其中 CC 类别:", nrow(go_cc_results), "个条目\n")
@@ -117,7 +145,7 @@ if(nrow(go_all@result) > 0) {
 save(go_all, file = file.path(output_dir, "GO_enrichment.RData"))
 cat("GO富集对象已保存为RData文件\n")
 
-# KEGG富集分析
+# KEGG富集分析------------------
 cat("开始KEGG富集分析...\n")
 kegg <- enrichKEGG(gene = gene_ids$ENTREZID,
                  organism = 'mmu',
@@ -139,7 +167,7 @@ if(nrow(kegg@result) > 0) {
 save(kegg, file = file.path(output_dir, "KEGG_enrichment.RData"))
 cat("KEGG富集对象已保存为RData文件\n")
 
-# 可视化富集分析结果
+# 可视化富集分析结果------------------
 cat("开始绘制富集分析结果...\n")
 
 # ===== GO分析可视化 =====
@@ -149,9 +177,9 @@ go_all@result <- go_all@result[order(go_all@result$p.adjust), ]
 
 # 找出包含"carbon"的词条
 carbon_terms <- grep("carbon", go_all@result$Description, ignore.case = TRUE)
-
-# 选择前10个条目和包含carbon的词条
-top10_indices <- 1:min(10, nrow(go_all@result))
+carbon_terms = carbon_terms[c(1, 3)]
+# 选择前5个条目和包含carbon的词条
+top10_indices <- 1:min(2, nrow(go_all@result))
 selected_indices <- unique(c(top10_indices, carbon_terms))
 selected_indices <- selected_indices[selected_indices <= nrow(go_all@result)]
 
@@ -165,19 +193,28 @@ go_barplot_data <- go_selected %>%
   mutate(log_padj = -log10(p.adjust),
          Description = factor(Description, levels = rev(Description)))
 
-# GO条形图 - 使用ggplot2直接绘制
-p1 <- ggplot(go_barplot_data, aes(x = log_padj, y = Description, fill = log_padj)) +
-  geom_bar(stat = "identity") +
-  scale_fill_gradientn(colours = colorRampPalette(brewer.pal(9, "YlOrRd"))(30)) +
+# GO条形图 - 使用ggplot2直接绘制########################
+p1 <- ggplot(go_barplot_data, aes(x = log_padj, y = Description)) +
+  geom_bar(stat = "identity", width = 0.6, fill = "steelblue") +
+  geom_vline(xintercept = -log10(0.05), linetype = "dashed", color = "red") +
   labs(title = "GO Enrichment Analysis",
        x = "-log10(p.adjust)",
        y = NULL) +
   my_theme +
   theme(axis.text.y = element_text(size = 8, hjust = 1))
-print(p1)
 
-# 使用ggsave保存图片
-ggsave(file.path(output_dir, "GO_barplot.pdf"), p1, width = 6, height = min(8, max(4, length(show_terms) * 0.3)))
+# 检查是否需要断轴
+max_log_padj_go <- max(go_barplot_data$log_padj, na.rm = TRUE)
+if (is.finite(max_log_padj_go) && max_log_padj_go > 5) {
+  p1 <- p1 + scale_x_cut(breaks = c(5), which = 2, scales = 0.4)
+}
+
+# 强制关闭所有现有图形设备，确保从一个干净的状态开始
+while(!is.null(dev.list())) dev.off()
+# 使用cairo_pdf设备，这是解决罕见绘图问题的最终方法
+cairo_pdf(file.path(output_dir, "GO_barplot.pdf"), width = 5.5, height = length(show_terms) * 0.35)
+print(p1)
+dev.off()
 
 # 准备GO点图数据
 go_dotplot_data <- go_selected %>%
@@ -186,7 +223,7 @@ go_dotplot_data <- go_selected %>%
          GeneRatio = parse_ratio(GeneRatio),
          Description = factor(Description, levels = rev(Description)))
 
-# GO点图 - 使用ggplot2直接绘制
+# GO点图 - 使用ggplot2直接绘制########################
 p2 <- ggplot(go_dotplot_data, aes(x = log_padj, y = Description, size = Count, color = log_padj)) +
   geom_point() +
   scale_color_gradientn(colours = colorRampPalette(brewer.pal(9, "YlOrRd"))(30)) +
@@ -196,28 +233,26 @@ p2 <- ggplot(go_dotplot_data, aes(x = log_padj, y = Description, size = Count, c
        size = "Gene Count") +
   my_theme +
   theme(axis.text.y = element_text(size = 8, hjust = 1))
-print(p2)
 
-# 使用ggsave保存图片
+# 使用ggsave保存图片，不再需要手动print
 ggsave(file.path(output_dir, "GO_dotplot.pdf"), p2, width = 6, height = min(8, max(4, length(show_terms) * 0.3)))
 
-# GO富集网络图 - 使用更新的参数语法并确保不超出边界
+# GO富集网络图 - 使用更新的参数语法并确保不超出边界########################
 # 先检查showCategory参数是否超出可用的GO条目数量
 if(length(show_terms) > 0) {
   # 确保用于网络图的条目数不会太多，避免下标出界错误
   max_terms_for_network <- min(10, length(show_terms))
   network_terms <- show_terms[1:max_terms_for_network]
-  
+
   # 使用新的参数语法，避免过时警告
-  p3 <- emapplot(pairwise_termsim(go_all), 
+  p3 <- emapplot(pairwise_termsim(go_all),
                showCategory = network_terms,
                cex.params = list(category_label = 0.6),  # 新的参数语法
                color = "p.adjust") +
     labs(title = "GO Term Similarity Network") +
     my_theme
-  print(p3)
-  
-  # 使用ggsave保存图片
+
+  # 使用ggsave保存图片，不再需要手动print
   ggsave(file.path(output_dir, "GO_emapplot.pdf"), p3, width = 7, height = 6)
 } else {
   cat("警告: 没有足够的GO条目创建网络图\n")
@@ -230,9 +265,9 @@ kegg@result$clean_name <- gsub(" - Mus musculus \\(house mouse\\)", "", kegg@res
 
 # 找出包含"carbon"的KEGG通路
 carbon_kegg <- grep("carbon", kegg@result$clean_name, ignore.case = TRUE)
-
+carbon_kegg = carbon_kegg[1]
 # 选择前10个条目和包含carbon的词条
-top10_kegg <- 1:min(10, nrow(kegg@result))
+top10_kegg <- 1:min(2, nrow(kegg@result))
 selected_kegg <- unique(c(top10_kegg, carbon_kegg))
 selected_kegg <- selected_kegg[selected_kegg <= nrow(kegg@result)]
 
@@ -247,19 +282,28 @@ kegg_barplot_data <- kegg_selected %>%
   mutate(log_padj = -log10(p.adjust),
          Description = factor(Description, levels = rev(Description)))
 
-# KEGG条形图 - 使用ggplot2直接绘制
-p6 <- ggplot(kegg_barplot_data, aes(x = log_padj, y = Description, fill = log_padj)) +
-  geom_bar(stat = "identity") +
-  scale_fill_gradientn(colours = colorRampPalette(brewer.pal(9, "YlOrRd"))(30)) +
+# KEGG条形图 - 使用ggplot2直接绘制 #########################
+p6 <- ggplot(kegg_barplot_data, aes(x = log_padj, y = Description)) +
+  geom_bar(stat = "identity", width = 0.6, fill = "steelblue") +
+  geom_vline(xintercept = -log10(0.05), linetype = "dashed", color = "red") +
   labs(title = "KEGG Pathway Enrichment",
        x = "-log10(p.adjust)",
        y = NULL) +
   my_theme +
   theme(axis.text.y = element_text(size = 8, hjust = 1))
-print(p6)
 
-# 使用ggsave保存图片
-ggsave(file.path(output_dir, "KEGG_barplot.pdf"), p6, width = 6, height = min(8, max(4, length(show_kegg_terms) * 0.3)))
+# 检查是否需要断轴
+max_log_padj_kegg <- max(kegg_barplot_data$log_padj, na.rm = TRUE)
+if (is.finite(max_log_padj_kegg) && max_log_padj_kegg > 5) {
+  p6 <- p6 + scale_x_cut(breaks = c(3), which = 2, scales = 0.4)
+}
+
+# 强制关闭所有现有图形设备，确保从一个干净的状态开始
+while(!is.null(dev.list())) dev.off()
+# 使用cairo_pdf设备，这是解决罕见绘图问题的最终方法
+cairo_pdf(file.path(output_dir, "KEGG_barplot.pdf"), width = 5.5, height = length(show_terms) * 0.35)
+print(p6)
+dev.off()
 
 # 准备KEGG点图数据
 kegg_dotplot_data <- kegg_selected %>%
@@ -269,7 +313,7 @@ kegg_dotplot_data <- kegg_selected %>%
          GeneRatio = parse_ratio(GeneRatio),
          Description = factor(Description, levels = rev(Description)))
 
-# KEGG点图 - 使用ggplot2直接绘制
+# KEGG点图 - 使用ggplot2直接绘制#########################
 p8 <- ggplot(kegg_dotplot_data, aes(x = log_padj, y = Description, size = Count, color = log_padj)) +
   geom_point() +
   scale_color_gradientn(colours = colorRampPalette(brewer.pal(9, "YlOrRd"))(30)) +
@@ -279,27 +323,25 @@ p8 <- ggplot(kegg_dotplot_data, aes(x = log_padj, y = Description, size = Count,
        size = "Gene Count") +
   my_theme +
   theme(axis.text.y = element_text(size = 8, hjust = 1))
-print(p8)
 
-# 使用ggsave保存图片
+# 使用ggsave保存图片，不再需要手动print
 ggsave(file.path(output_dir, "KEGG_dotplot.pdf"), p8, width = 6, height = min(8, max(4, length(show_kegg_terms) * 0.3)))
 
-# KEGG网络图 - 同样修正参数和错误处理
+# KEGG网络图 - 同样修正参数和错误处理#########################
 if(length(show_kegg_terms) > 0) {
   # 确保用于网络图的条目数不会太多
   max_kegg_terms_for_network <- min(10, length(show_kegg_terms))
   network_kegg_terms <- show_kegg_terms[1:max_kegg_terms_for_network]
-  
+
   # 使用新的参数语法
-  p9 <- emapplot(pairwise_termsim(kegg), 
+  p9 <- emapplot(pairwise_termsim(kegg),
                showCategory = network_kegg_terms,
                cex.params = list(category_label = 0.6),  # 新的参数语法
                color = "p.adjust") +
     labs(title = "KEGG Pathway Similarity Network") +
     my_theme
-  print(p9)
-  
-  # 使用ggsave保存图片
+
+  # 使用ggsave保存图片，不再需要手动print
   ggsave(file.path(output_dir, "KEGG_emapplot.pdf"), p9, width = 7, height = 6)
 } else {
   cat("警告: 没有足够的KEGG通路创建网络图\n")

@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
 # 作者：Claude AI Assistant
-# 创建日期：2024-06-24
+# 创建日期：2025-04-17
 # 分析内容：使用edgeR对Cre.act和Flox.act组样本进行配对比较差异分析
 
-# 加载所需的包
+# 加载所需的包------------------
 library(edgeR)
 library(ggplot2)
 library(pheatmap)
@@ -13,7 +13,7 @@ library(ggrepel)  # 用于在图上添加文本标签
 library(RColorBrewer) # 用于配色
 library(tibble)
 
-# 设置工作目录
+# 设置工作目录----------------------
 # setwd("RNA-seq_analysis")  # 如需要，请取消注释
 
 # 定义自定义主题，设置全局字体大小为8pt
@@ -29,7 +29,7 @@ my_theme <- theme_bw() +
     strip.text = element_text(size = 8)
   )
 
-# 读取数据
+# 读取数据--------------------------
 counts <- read.csv("readcount.csv", row.names = 1, check.names = FALSE)
 coldata <- read.csv("coldata.csv", row.names = 1)
 
@@ -53,7 +53,7 @@ names(sample_rename) <- act_samples
 cat("Sample grouping information:\n")
 print(data.frame(Sample = names(group_info), Group = group_info, Pair = pair_info, Rename = sample_rename))
 
-# 创建DGEList对象
+# 创建DGEList对象------------------
 dge <- DGEList(counts = counts_act, group = group_info)
 
 # 过滤低表达基因（每组中至少有3个样本CPM>1）
@@ -65,7 +65,7 @@ cat("Genes after filtering: ", nrow(dge_filtered), "\n")
 # 标准化
 dge_filtered <- calcNormFactors(dge_filtered, method = "TMM")
 
-# 修改：调整设计矩阵，使logFC大于0表示在Cre中上调
+# 修改：调整设计矩阵，使logFC大于0表示在Cre中上调------------------
 # 方法1：修改对比方向
 # 设置参考水平为Flox（即将Flox作为基线）
 group_info <- factor(group_info, levels = c("Flox", "Cre"))
@@ -97,7 +97,7 @@ logcpm <- cpm(dge_filtered, log = TRUE)
 sample_expr <- logcpm[rownames(deg), ]
 deg <- cbind(deg, sample_expr)
 
-# 保存结果
+# 保存结果------------------
 write.csv(deg, "edgeR_paired_Cre.act_vs_Flox.act_results.csv")
 
 # 输出显著差异基因数量
@@ -107,13 +107,13 @@ cat("Up-regulated genes in Cre: ", up_in_cre, "\n")
 cat("Down-regulated genes in Cre: ", down_in_cre, "\n")
 cat("Total significant DEGs (PValue < 0.05): ", up_in_cre + down_in_cre, "\n")
 
-# 定义RColorBrewer颜色方案
+# 定义RColorBrewer颜色方案------------------
 up_color <- brewer.pal(9, "Set1")[1]    # 红色
 down_color <- brewer.pal(9, "Set1")[2]  # 蓝色
 notsig_color <- "grey70"
 color_palette <- brewer.pal(8, "Dark2")
 
-# 可视化
+# 可视化------------------
 
 # 要标记的基因列表
 genes_to_label <- c(
@@ -123,7 +123,7 @@ genes_to_label <- c(
     "Ahcy", "Ikzf2", "Brd4", "Gzmb", "Prf1", "Mki67", "Bcl2"
 )
 
-# 1. 火山图 (使用ggplot2)(重点)
+# 1. 火山图 (使用ggplot2)(重点)------------------
 # 创建火山图数据
 volcano_data <- deg
 volcano_data$Gene <- rownames(volcano_data)
@@ -133,11 +133,15 @@ volcano_data$ToLabel <- volcano_data$Gene %in% genes_to_label
 # 创建火山图
 p2 <- ggplot(volcano_data, aes(x = logFC, y = -log10(PValue), color = regulation)) +
   geom_point(size = 0.8, alpha = 0.7) +
-  scale_color_manual(values = c("Up_in_Cre" = up_color, "Down_in_Cre" = down_color, "Not_Sig" = notsig_color)) +
+  scale_color_manual(name = "Regulation",
+                     values = c("Up_in_Cre" = up_color, "Down_in_Cre" = down_color, "Not_Sig" = notsig_color),
+                     labels = c("Up_in_Cre" = paste0("Up (", up_in_cre, ")"),
+                                "Down_in_Cre" = paste0("Down (", down_in_cre, ")"),
+                                "Not_Sig" = "Not Sig")) +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
   geom_vline(xintercept = 0, linetype = "dashed") +
-  labs(title = "Volcano Plot: Paired Comparison Cre.act vs Flox.act",
-       x = "Expression Difference (logFC, Cre vs Flox)",
+  labs(title = "Paired Comparison Cre vs Flox",
+       x = "logFC, Cre vs Flox",
        y = "-log10(PValue)") +
   my_theme
 
@@ -157,7 +161,7 @@ p2 <- p2 + geom_text_repel(
 p2
 ggsave("Volcano_plot_paired_Cre.act_vs_Flox.act.pdf", p2, width = 5, height = 4)
 
-# 2. 热图（只展示感兴趣的基因）
+# 2. 热图（只展示感兴趣的基因）------------------
 # 从感兴趣的基因中过滤出存在于我们数据集中的基因
 interest_genes_in_data <- genes_to_label[genes_to_label %in% rownames(logcpm)]
 
@@ -253,7 +257,7 @@ if(length(interest_genes_in_data) > 0) {
   ggsave("Heatmap_genes_of_interest_ggplot.pdf", p3, width = 3, height = 5)
 }
 
-# 3. PCA分析 (使用sample_rename作为标签)
+# 3. PCA分析 (使用sample_rename作为标签)------------------
 logcpm_all <- cpm(dge_filtered, log = TRUE)
 pca <- prcomp(t(logcpm_all), scale = TRUE)
 pca_data <- as.data.frame(pca$x[, 1:2])
@@ -274,14 +278,14 @@ p4 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = group, shape = pair, label 
 p4
 ggsave("PCA_plot_paired.pdf", p4, width = 4, height = 3)
 
-# 4. 感兴趣基因的箱线图 (使用sample_rename)
+# 4. 感兴趣基因的箱线图 (使用sample_rename)------------------
 # 从指定的感兴趣基因中选择存在于数据集中的
 interest_genes <- genes_to_label[genes_to_label %in% rownames(logcpm)]
 
 if(length(interest_genes) > 0) {
   # 准备箱线图数据
   boxplot_data <- data.frame()
-  
+
   for(gene in interest_genes) {
     gene_expr <- logcpm[gene, ]
     temp_data <- data.frame(
@@ -295,44 +299,44 @@ if(length(interest_genes) > 0) {
     boxplot_data <- rbind(boxplot_data, temp_data)
   }
   print(head(boxplot_data))
-  
+
   # 将Gene转换为因子并设置为斜体
   boxplot_data$Gene <- factor(boxplot_data$Gene)
-  
+
   # 确保Gene列有值
   if(length(unique(boxplot_data$Gene)) == 0) {
     cat("警告: 找不到任何匹配的基因数据\n")
   } else {
     # 使用所有感兴趣的基因而不是限制为前12个
     boxplot_data_subset <- boxplot_data
-    
+
     # 检查数据
     cat("基因数量:", length(unique(boxplot_data_subset$Gene)), "\n")
     cat("样本数量:", length(unique(boxplot_data_subset$Sample)), "\n")
     cat("组别数量:", length(unique(boxplot_data_subset$Group)), "\n")
-    
+
     # 确保Gene列有效
     if(length(unique(boxplot_data_subset$Gene)) > 0) {
       # 创建箱线图，根据基因数量调整列数
       gene_count <- length(unique(boxplot_data_subset$Gene))
       # 调整列数，确保每行不超过5个基因
       ncol_value <- min(5, gene_count)
-      
+
       # 添加显著性信息
       sig_data <- data.frame()
       for(gene in unique(boxplot_data_subset$Gene)) {
         # 获取差异分析结果中的P值
         if(gene %in% rownames(deg)) {
           p_value <- deg[gene, "PValue"]
-          sig_level <- ifelse(p_value < 0.001, "***", 
-                             ifelse(p_value < 0.01, "**", 
+          sig_level <- ifelse(p_value < 0.001, "***",
+                             ifelse(p_value < 0.01, "**",
                                    ifelse(p_value < 0.05, "*", "ns")))
-          
+
           # 计算显著性标记的位置
           gene_data <- boxplot_data_subset[boxplot_data_subset$Gene == gene, ]
           y_max <- max(gene_data$Expression, na.rm = TRUE)
           y_pos <- y_max + 0.1 * (max(gene_data$Expression, na.rm = TRUE) - min(gene_data$Expression, na.rm = TRUE))
-          
+
           temp_sig <- data.frame(
             Gene = gene,
             y = y_pos,
@@ -342,7 +346,7 @@ if(length(interest_genes) > 0) {
           sig_data <- rbind(sig_data, temp_sig)
         }
       }
-      
+
       # 创建箱线图
       p6 <- ggplot(boxplot_data_subset, aes(x = Group, y = Expression, fill = Group)) +
         geom_boxplot(width = 0.5, outlier.shape = NA) +
@@ -361,7 +365,7 @@ if(length(interest_genes) > 0) {
           panel.grid.minor = element_blank(),
           axis.text.x = element_text(angle = 45, hjust = 1)
         )
-      
+
       # 添加显著性标记
       if(nrow(sig_data) > 0) {
         p6 <- p6 + geom_text(
@@ -371,29 +375,29 @@ if(length(interest_genes) > 0) {
           inherit.aes = FALSE
         )
       }
-      
+
       print(p6)
-      
+
       # 自动调整保存的图像大小，基于基因数量
       width_value <- min(12, max(6, ncol_value * 1.5))
       height_value <- min(15, max(8, ceiling(gene_count/ncol_value) * 1.5))
-      
+
       ggsave("Boxplot_interest_genes.pdf", p6, width = width_value, height = height_value)
-      
+
       # 创建配对线图 - 使用sample_rename作为标签
       # 重整数据为配对格式
       paired_data <- data.frame()
-      
+
       for(gene in unique(boxplot_data_subset$Gene)) {
         for(pair_id in unique(boxplot_data_subset$Pair)) {
           gene_subset <- boxplot_data_subset[boxplot_data_subset$Gene == gene & boxplot_data_subset$Pair == pair_id, ]
-          
+
           if(nrow(gene_subset) == 2) { # 确保有配对
             paired_data <- rbind(paired_data, gene_subset)
           }
         }
       }
-      
+
       # 检查配对数据是否有效
       if(nrow(paired_data) > 0) {
         # 点和线显示配对样本
@@ -412,7 +416,7 @@ if(length(interest_genes) > 0) {
             panel.grid.minor = element_blank(),
             axis.text.x = element_text(angle = 45, hjust = 1)
           )
-        
+
         # 添加显著性标记到配对图
         if(nrow(sig_data) > 0) {
           p7 <- p7 + geom_text(
@@ -422,7 +426,7 @@ if(length(interest_genes) > 0) {
             inherit.aes = FALSE
           )
         }
-        
+
         print(p7)
         ggsave("Paired_lines_interest_genes.pdf", p7, width = width_value, height = height_value)
       } else {
@@ -436,7 +440,7 @@ if(length(interest_genes) > 0) {
   cat("警告: 指定的基因都不在表达数据中\n")
 }
 
-# 5. 额外添加：探索我们感兴趣的基因在差异基因中的位置
+# 5. 额外添加：探索我们感兴趣的基因在差异基因中的位置------------------
 # 创建函数来检查基因是否在差异基因中
 check_genes_interest <- function(gene_list, deg_df) {
   result <- data.frame(
