@@ -69,6 +69,8 @@ project_root/
 6.  **高级分析 (可选)**:
     *   `06_generate_heatmap.sh`: 使用 deepTools 生成TSS区域的信号富集热图。
     *   `07_sample_correlation.sh`: 使用 deepTools 分析样本间的相关性。
+7.  **IGV风格可视化**:
+    *   `08_plot_igv_style.sh`: 使用 pyGenomeTracks 生成IGV风格的基因组浏览器图，展示特定基因区域的信号富集模式。
 
 **运行方式**:
 服务器端的脚本设计为通过SGE (Sun Grid Engine) 作业调度系统提交和运行。具体提交方式请参考 `.cursor\rules\cuttag_workflow.mdc` 中的第6节"并行处理规范"和第7节中的 `qsub.sh` 脚本说明。
@@ -104,6 +106,10 @@ project_root/
 *   **激活方式**: 在执行服务器端脚本前，使用 `source activate cuttag` 命令激活环境。
 *   **主要工具**: FastQC, MultiQC, Cutadapt, Bowtie2, SAMtools, Picard, MACS3, SEACR, BEDtools, deepTools, GNU Parallel。
     确保这些工具已在 `cuttag` 环境中正确安装。脚本中通常包含依赖检查步骤。
+
+*   **IGV可视化工具**: 在 `cuttag` 环境中安装 `pyGenomeTracks`
+*   **安装命令**: `conda install -c bioconda -c conda-forge pygenometracks` (在cuttag环境中执行)
+*   **用途**: 生成IGV风格的基因组浏览器图（通过 `08_plot_igv_style.sh` 脚本）
 
 ### 4.2 本地环境
 
