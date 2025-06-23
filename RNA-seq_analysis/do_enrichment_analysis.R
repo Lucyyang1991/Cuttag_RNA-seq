@@ -143,6 +143,7 @@ if(nrow(go_all@result) > 0) {
 
 # 保存GO富集对象为RData (移到if循环外)
 save(go_all, file = file.path(output_dir, "GO_enrichment.RData"))
+write.csv(go_all@result, file = file.path(output_dir, "GO_enrichment.csv"))
 cat("GO富集对象已保存为RData文件\n")
 
 # KEGG富集分析------------------
@@ -165,6 +166,7 @@ if(nrow(kegg@result) > 0) {
 
 # 保存KEGG富集对象为RData (移到if循环外)
 save(kegg, file = file.path(output_dir, "KEGG_enrichment.RData"))
+write.csv(kegg@result, file = file.path(output_dir, "KEGG_enrichment.csv"))
 cat("KEGG富集对象已保存为RData文件\n")
 
 # 可视化富集分析结果------------------
