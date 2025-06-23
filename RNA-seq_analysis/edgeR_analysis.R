@@ -12,6 +12,8 @@ library(tidyr)
 library(ggrepel)  # 用于在图上添加文本标签
 library(RColorBrewer) # 用于配色
 library(tibble)
+library(clusterProfiler)
+library(org.Mm.eg.db)
 
 # 设置工作目录----------------------
 # setwd("RNA-seq_analysis")  # 如需要，请取消注释
@@ -476,4 +478,79 @@ print(interest_genes_result)
 cat("Paired comparison analysis completed! Results saved to current directory.\n")
 cat("Note: Significant genes were filtered using only PValue < 0.05 criterion.\n")
 cat("logFC direction has been adjusted: now positive logFC means up-regulated in Cre mice.\n")
+
+# 功能富集分析 (GO and KEGG)------------------
+# 准备基因列表
+deg = read.csv("edgeR_paired_Cre.act_vs_Flox.act_results.csv", row.names = 1)
+# 从deg数据框中提取上调和下调的基因
+up_genes <- rownames(deg[deg$regulation == "Up_in_Cre", ])
+down_genes <- rownames(deg[deg$regulation == "Down_in_Cre", ])
+all_genes <- rownames(deg)
+
+# 将基因符号转换为Entrez ID
+# 忽略转换失败的基因
+suppressMessages({
+  up_entrez <- bitr(up_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
+  down_entrez <- bitr(down_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
+  all_entrez <- bitr(all_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
+})
+
+# 创建结果目录
+dir.create("RNA_enrichment_results", showWarnings = FALSE)
+
+# 准备compareCluster的输入基因列表
+gene_list <- list(
+    Up_in_Cre = up_entrez$ENTREZID,
+    Down_in_Cre = down_entrez$ENTREZID
+)
+# 移除空的基因集
+gene_list <- gene_list[sapply(gene_list, function(x) length(x) > 0)]
+
+if (length(gene_list) > 0) {
+  # 1. GO富集分析,使用compareCluster进行--------------
+  compare_go <- compareCluster(geneCluster = gene_list,
+                               fun = "enrichGO",
+                               universe = all_entrez$ENTREZID,
+                               OrgDb = org.Mm.eg.db,
+                               ont = "ALL",
+                               pAdjustMethod = "BH",
+                               pvalueCutoff = 0.05,
+                               qvalueCutoff = 0.2,
+                               readable = TRUE)
+
+  if (!is.null(compare_go) && nrow(as.data.frame(compare_go)) > 0) {
+    # 保存结果
+    save(compare_go, file = "RNA_enrichment_results/compareCluster_GO_results.RData")
+    write.csv(as.data.frame(compare_go), file = "RNA_enrichment_results/compareCluster_GO_results.csv", row.names = FALSE)
+
+    cat("GO compareCluster analysis completed.\n")
+  } else {
+    cat("No significant GO terms found for comparison.\n")
+  }
+
+  # 2. KEGG富集分析,使用compareCluster进行---------------
+  compare_kegg <- compareCluster(geneCluster = gene_list,
+                                 fun = "enrichKEGG",
+                                 universe = all_entrez$ENTREZID,
+                                 organism = 'mmu',
+                                 pAdjustMethod = "BH",
+                                 pvalueCutoff = 0.05,
+                                 qvalueCutoff = 0.2)
+
+  if (!is.null(compare_kegg) && nrow(as.data.frame(compare_kegg)) > 0) {
+    compare_kegg <- setReadable(compare_kegg, OrgDb = org.Mm.eg.db, keyType="ENTREZID")
+
+    # 保存结果
+    save(compare_kegg, file = "RNA_enrichment_results/compareCluster_KEGG_results.RData")
+    write.csv(as.data.frame(compare_kegg), file = "RNA_enrichment_results/compareCluster_KEGG_results.csv", row.names = FALSE)
+
+    cat("KEGG compareCluster analysis completed.\n")
+  } else {
+    cat("No significant KEGG pathways found for comparison.\n")
+  }
+} else {
+  cat("No gene sets to analyze.\n")
+}
+
+cat("Enrichment analysis completed!\n")
 
