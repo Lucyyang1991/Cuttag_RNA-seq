@@ -1,0 +1,6 @@
+# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+Helios_result
+LBFC20230270/LBFC20230270-01/
+*.tar.gz
+*.rar
+*.Rhistory
