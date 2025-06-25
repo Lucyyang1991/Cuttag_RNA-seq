@@ -10,7 +10,7 @@
 
 ```
 project_root/
-├── LBFC20230270/             # 原始数据及处理脚本 (服务器端运行)
+├── CutTag_Linux/             # 原始数据及处理脚本 (服务器端运行)
 │   ├── config/               # 配置文件 (如 00_config.sh)
 │   ├── scripts/              # 各步骤处理脚本 (如 01_fastqc.sh, 02_trimming.sh 等)
 │   ├── raw_data/             # 原始FASTQ文件存放目录
@@ -23,7 +23,7 @@ project_root/
 │   │   ├── 05_visualization/
 │   │   └── logs/
 │   └── test_analysis_results/ # 测试分析结果输出目录 (结构同analysis_results)
-├── local_analysis/           # CUT&Tag下游本地分析 (本地环境运行)
+├── CutTag_local_analysis/           # CUT&Tag下游本地分析 (本地环境运行)
 │   ├── peak_annotation/      # 峰值注释结果
 │   ├── functional_analysis/  # (CUT&Tag峰值相关基因的)功能富集分析结果
 │   ├── visualization/        # 可视化结果图表
@@ -44,7 +44,7 @@ project_root/
 
 本项目的分析流程主要分为服务器端分析和本地分析两部分。
 
-### 3.1 服务器端分析流程 (位于 `LBFC20230270` 目录)
+### 3.1 服务器端分析流程 (位于 `CutTag_Linux` 目录)
 
 服务器端分析流程主要处理原始测序数据，包括以下步骤：
 
@@ -75,21 +75,21 @@ project_root/
 **运行方式**:
 服务器端的脚本设计为通过SGE (Sun Grid Engine) 作业调度系统提交和运行。具体提交方式请参考 `.cursor\rules\cuttag_workflow.mdc` 中的第6节"并行处理规范"和第7节中的 `qsub.sh` 脚本说明。
 
-### 3.2 本地分析流程 (位于 `local_analysis` 和 `RNA-seq_analysis` 目录)
+### 3.2 本地分析流程 (位于 `CutTag_local_analysis` 和 `RNA-seq_analysis` 目录)
 
 本地分析流程主要对服务器端产生的Cut&Tag峰值文件等结果，以及RNA-seq数据进行下游的注释、差异表达分析、功能富集和整合分析。
 
-1.  **Cut&Tag峰值注释 (主要在 `local_analysis` 目录)**:
+1.  **Cut&Tag峰值注释 (主要在 `CutTag_local_analysis` 目录)**:
     *   使用R包 `ChIPseeker` 对MACS3或SEACR产生的peak文件进行注释，分析其在基因组上的分布特征。
     *   `07_filter_proximal_promoter_genes.R` (示例): 筛选近端启动子区域的峰值及其关联基因。
 2.  **RNA-seq差异表达分析 (主要在 `RNA-seq_analysis` 目录)**:
     *   使用 `edgeR` (例如通过 `edgeR_analysis.R` 脚本) 或其他适用工具进行配对或分组比较，分析差异表达基因。
     *   生成火山图、热图等可视化结果。
     *   根据项目规则，可能特别关注某些基因集（如一碳代谢相关基因）的表达变化。
-3.  **整合分析 (结果可能存放于 `local_analysis` 或 `RNA-seq_analysis/enrichment_results`)**: 
+3.  **整合分析 (结果可能存放于 `CutTag_local_analysis` 或 `RNA-seq_analysis/enrichment_results`)**: 
     *   整合Cut&Tag的峰值数据（特别是与基因关联的峰，如启动子区域）和RNA-seq的差异表达基因。
     *   例如，筛选近端启动子区域存在峰值且其关联基因差异表达的基因列表，以鉴定潜在的直接调控靶基因。
-4.  **功能富集分析 (结果可能存放于 `local_analysis/functional_analysis` 或 `RNA-seq_analysis/enrichment_results`)**:
+4.  **功能富集分析 (结果可能存放于 `CutTag_local_analysis/functional_analysis` 或 `RNA-seq_analysis/enrichment_results`)**:
     *   `do_enrichment_analysis.R` (示例): 使用R包 `clusterProfiler` 对Cut&Tag关联基因、差异表达基因或整合分析得到的基因列表进行GO和KEGG等功能富集分析。
     *   分析关键生物学通路。
 5.  **结果可视化 (分布于各分析子目录)**:
@@ -132,8 +132,8 @@ project_root/
 
 ## 7. 注意事项
 
-*   **环境分离**: `LBFC20230270` 目录下的脚本仅能在服务器环境运行，`local_analysis` 目录下的脚本仅能在本地环境运行。
-*   **配置文件**: 核心配置（如文件路径、样本列表）集中在 `LBFC20230270/config/00_config.sh` 中管理。
+*   **环境分离**: `CutTag_Linux` 目录下的脚本仅能在服务器环境运行，`CutTag_local_analysis` 目录下的脚本仅能在本地环境运行。
+*   **配置文件**: 核心配置（如文件路径、样本列表）集中在 `CutTag_Linux/config/00_config.sh` 中管理。
 *   **SGE提交**: 服务器端计算密集型任务通过SGE提交，遵循特定的脚本格式和依赖管理，详见 `.cursor\rules\cuttag_workflow.mdc`。
 *   **抽样测试**: 在进行完整分析前，建议使用 `00_subsample.sh` 对少量数据进行抽样测试，确保流程稳定。测试输出与正式分析输出严格分离。
 

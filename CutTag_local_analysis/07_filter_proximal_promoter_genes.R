@@ -11,7 +11,7 @@ suppressPackageStartupMessages({
 })
 
 # 设置工作目录
-base_dir <- "D:/2023_Git/cut&tag/20230308结果/local_analysis"
+base_dir <- "D:/2023_Git/cut&tag/20230308结果/CutTag_local_analysis"
 input_dir <- paste0(base_dir, "/peak_annotation_macs3/tables")
 output_dir <- paste0(base_dir, "/peak_annotation_macs3/proximal_promoter_genes")
 

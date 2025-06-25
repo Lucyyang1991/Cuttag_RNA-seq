@@ -11,7 +11,7 @@ suppressPackageStartupMessages({
 })
 
 # 设置工作目录和文件路径
-base_dir = "D:/2023_Git/cut&tag/20230308结果/local_analysis"
+base_dir = "D:/2023_Git/cut&tag/20230308结果/CutTag_local_analysis"
 samples = c("H1_vs_I1", "H1_vs_I2", 
            "H2_vs_I1", "H2_vs_I2",
            "H3_vs_I1", "H3_vs_I2")  # SEACR结果文件名
