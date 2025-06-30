@@ -1,3 +1,10 @@
+# 加载必要的包
+suppressPackageStartupMessages({
+  library(ggplot2)
+  library(RColorBrewer)
+  library(cowplot)
+})
+
 # 1. 全局绘图主题
 my_theme <- theme_cowplot(font_size = 8) +
   theme(
