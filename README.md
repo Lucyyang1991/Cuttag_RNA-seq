@@ -85,6 +85,7 @@ project_root/
     *   `scripts/01_intersect_genes.R`: 整合Cut&Tag的峰值数据（特别是与基因关联的峰）和RNA-seq的差异表达基因，以鉴定潜在的直接调控靶基因。
     *   `scripts/02_run_enrichment_analysis.R`: 对整合分析得到的基因列表进行功能富集分析。
     *   `scripts/03_plot_enrichment_results.R`: 对富集分析结果进行可视化。
+    *   `scripts/04_plot_heatmap.R`: 使用 `ComplexHeatmap` 对特定的基因集（如KEGG通路基因和自定义标记基因）绘制表达热图，进行可视化分析。
 
 **运行方式**:
 本地分析脚本（主要是R脚本）在本地计算机环境中运行。
